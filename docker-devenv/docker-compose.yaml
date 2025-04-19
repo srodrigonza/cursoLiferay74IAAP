@@ -1,0 +1,47 @@
+version: '3.1'
+
+services:
+  db_portal:
+    image: postgres:13.5-alpine
+    volumes: 
+     - pgdata:/var/lib/postgresql/data
+    ports: 
+     - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: portaldemo-admin123
+      POSTGRES_USER: postgres
+      POSTGRES_DB: lportal
+  elastic:
+    image: liferaycloud/elasticsearch:7.17.1-4.1.6
+    volumes:
+      - esdata:/data
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - LCP_SERVICE_ID=search
+    # liferaycloud image adds a line to elasticsearch.yml on startup. If the container is stopped and started (not recreated) this line is added a second time causing an error on startup.
+    # this custom entrypoint removes this line if exists to avoid this error
+    entrypoint: ["/bin/bash", "-c" , "sed -i '/discovery.type: single-node/d' /usr/share/elasticsearch/config/elasticsearch.yml && /usr/local/bin/entrypoint.sh"]
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.1
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elastic:9200
+    ports:
+      - 5601:5601
+  
+  fake-smtp:
+    image: mailhog/mailhog
+    restart: unless-stopped
+    ports:
+      - 25:1025
+      - 8025:8025
+volumes:
+  pgdata:
+  pgdata_maestros:
+  esdata:
+  pgkeycloackdata:
+  liferay-data:
+
